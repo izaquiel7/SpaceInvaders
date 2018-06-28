@@ -16,7 +16,7 @@ local margemL = 20 -- margem esquerda
 local margemR = display.contentWidth - 20 -- a margem direita
 local invasorMetade = 16
 local invasores = {} -- guarda todos os invasores
-local invasorVeloci = 2.5
+local invasorVeloci = 5
 local balasNave = {} -- guarda as balas da nave
 local podeAtirar = true
 local invasorAtirador = {} -- guarda invasores atiradores
@@ -33,7 +33,7 @@ function scene:create(event)
     local group = self.view
     geradorE= geradorEstelar.new(200,group,3)
     configurarNave()
-  --  botoes()
+     botoes()
     configurarInvasor()
 end
 
@@ -54,7 +54,7 @@ end
 function scene:hide(event)
     local phase = event.phase
     local group = self.view
-    if ( phase == "will" ) then
+    if  phase == "will"  then
     	Runtime:removeEventListener("enterFrame", gameLoop)
         Runtime:removeEventListener("enterFrame", geradorE)
         Runtime:removeEventListener("tap", atirarBalasNave)
@@ -73,29 +73,29 @@ function configurarNave()
     nave.name = "nave"
     nave.x = display.contentCenterX- naveW/10
     nave.y = display.contentHeight - naveH +50
-   -- nave:play()
    nave.width = naveW
    nave.height = naveH
    scene.view:insert(nave)
 
-    physics.addBody( nave, "shapedefs")
+    physics.addBody( nave, "dynamic")
     nave.gravityScale = 0
 end
 
-local function onAccelerate(event)  -- No celular se vc virar o cell a nave se movimenta.
+local function moverNaveAcelerometro(event)  -- No celular se vc virar o cell a nave se movimenta.
 nave.x = display.contentCenterX + (display.contentCenterX * (event.xGravity*2))
+
+if nave.x < margemL then
+nave.x = margemL
+
+elseif  nave.x > margemR then
+nave.x = margemR
+end
+
 end
 system.setAccelerometerInterval( 60 )
-Runtime:addEventListener ("accelerometer", onAccelerate)
---[[
+Runtime:addEventListener ("accelerometer", moverNaveAcelerometro)
+--[[]]
 function botoes()
-    local function moverNave(event)
-        if event.target.name == "esquerda" then
-            nave.x = nave.x - 10
-        elseif event.target.name == "direita" then
-            nave.x = nave.x + 10
-        end
-    end
 
     local esquerda = display.newRect(60,700,50,50)
     esquerda.name = "esquerda"
@@ -106,7 +106,15 @@ function botoes()
     esquerda:addEventListener("touch", moverNave)
     direita:addEventListener("touch", moverNave) 
 
-end]]
+end
+
+function moverNave(event)
+        if event.target.name == "esquerda" then
+            nave.x = nave.x - 10
+        elseif event.target.name == "direita" then
+            nave.x = nave.x + 10
+        end
+    end
 
 function atirarBalasNave()
     if podeAtirar == true then
