@@ -73,9 +73,9 @@ function configurarNave()
     nave.name = "nave"
     nave.x = display.contentCenterX- naveW/10
     nave.y = display.contentHeight - naveH +50
-   nave.width = naveW
-   nave.height = naveH
-   scene.view:insert(nave)
+    nave.width = naveW
+    nave.height = naveH
+    scene.view:insert(nave)
 
     physics.addBody( nave, "dynamic")
     nave.gravityScale = 0
@@ -85,10 +85,10 @@ local function moverNaveAcelerometro(event)  -- No celular se vc virar o cell a 
 nave.x = display.contentCenterX + (display.contentCenterX * (event.xGravity*2))
 
 if nave.x < margemL then
-nave.x = margemL
+nave.x = margemL+80
 
 elseif  nave.x > margemR then
-nave.x = margemR
+nave.x = margemR-80
 end
 
 end
@@ -155,6 +155,7 @@ end
 
 
 function gameLoop()
+    atualizarScore(sim)
 	checarBalasNaveForaLimite()
     moverInvasores()
     checarBalasInvasoresForaLimite()
@@ -170,7 +171,7 @@ function configurarInvasor()
     local nInvasores = gameDados.numInvasor *2+1 
     for i = 1, gameDados.linhaDeInvasores do
         for j = 1, nInvasores do
-            local tinvasor = display.newImage("invader_1.png",xPosicaoInicio + ((invasorSize+10)*(j-1)), i * 80 )
+            local tinvasor = display.newImage("invader_1.png", xPosicaoInicio + ((invasorSize+10)*(j-1)), i * 80 )
             tinvasor.name = "invasor"
             tinvasor.width = invasorSize
             tinvasor.height = invasorSize
@@ -206,7 +207,24 @@ end
 --
 --- Tratando colisões --->
 --
+local score = 0
+function atualizarScore(sim)
+     
+    if sim == true then
+    score =  score + 100 
+    end
+    desenharScore(score)
+  end
 
+function desenharScore(score)
+    local options ={
+    x = margemL + 100,
+    y = 0,
+    text = "Score:" .. score
+}
+    ts = display.newText(options)
+    scene.view:insert(ts)
+end
 function onCollision(event)
 	local function removerNaveEinvasoresBalas(event)
     
@@ -233,10 +251,12 @@ function onCollision(event)
             if event.object1.name == "invasor" and event.object2.name == "laser" then
                 local tm = timer.performWithDelay(10, removerNaveEinvasoresBalas,1)
                 tm.params = {oInvasor = event.object1 , asBalasNave = event.object2}
+                atualizarScore(true)
             end
             if event.object1.name == "laser" and event.object2.name == "invasor"  then
                 local tm = timer.performWithDelay(10, removerNaveEinvasoresBalas,1)
                 tm.params = {oInvasor = event.object2 , asBalasNave = event.object1}
+                atualizarScore(true)
             end
 end
             if(event.object1.name == "nave" and event.object2.name == "laseri") then
