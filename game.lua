@@ -16,7 +16,7 @@ local margemL = 20 -- margem esquerda
 local margemR = display.contentWidth - 20 -- a margem direita
 local invasorMetade = 16
 local invasores = {} -- guarda todos os invasores
-local invasorVeloci = 5
+local invasorVeloci = 2.5
 local balasNave = {} -- guarda as balas da nave
 local podeAtirar = true
 local invasorAtirador = {} -- guarda invasores atiradores
@@ -28,12 +28,13 @@ local invasorTimerTiro -- timer usado para atira as balas dos invasores
 local fimDeGame = false;
 local botoes = {}  -- botão que move a nave, so pra teste
 local ativaTimerTiro -- timer para deixar nave atirar
+local score = 0
 
 function scene:create(event)
     local group = self.view
     geradorE= geradorEstelar.new(200,group,3)
     configurarNave()
-     botoes()
+    botoes()
     configurarInvasor()
 end
 
@@ -42,7 +43,7 @@ function scene:show(event)
     local cenaAnterior = composer.getSceneName( "previous" )
     composer.removeScene(cenaAnterior)
     local group = self.view
-    if ( phase == "did" ) then
+    if  phase == "did"  then
     	Runtime:addEventListener("enterFrame", gameLoop)
     	Runtime:addEventListener("enterFrame", geradorE)
     	Runtime:addEventListener("tap", atirarBalasNave)
@@ -67,6 +68,15 @@ scene:addEventListener( "create", scene )
 scene:addEventListener( "show", scene )
 scene:addEventListener( "hide", scene )
 
+
+function gameLoop()
+    desenharScore()
+    desenharVidas()
+	checarBalasNaveForaLimite()
+    moverInvasores()
+    checarBalasInvasoresForaLimite()
+end
+
 function configurarNave()
     local options = { width = naveW, height = naveH, numFrames = 2}
     nave = display.newImage("ship_r.png", display.contentCenterX, display.contentCenterY-300, options)
@@ -82,18 +92,18 @@ function configurarNave()
 end
 
 local function moverNaveAcelerometro(event)  -- No celular se vc virar o cell a nave se movimenta.
-nave.x = display.contentCenterX + (display.contentCenterX * (event.xGravity*2))
+	nave.x = display.contentCenterX + (display.contentCenterX * (event.xGravity*2))
 
-if nave.x < margemL then
-nave.x = margemL+80
+	if nave.x < margemL then
+	nave.x = 125
 
-elseif  nave.x > margemR then
-nave.x = margemR-80
+	elseif  nave.x > margemR then
+	nave.x = margemR-50
+	end
+
 end
-
-end
-system.setAccelerometerInterval( 60 )
-Runtime:addEventListener ("accelerometer", moverNaveAcelerometro)
+	system.setAccelerometerInterval( 60 )
+	Runtime:addEventListener ("accelerometer", moverNaveAcelerometro)
 --[[]]
 function botoes()
 
@@ -133,13 +143,15 @@ function atirarBalasNave()
     else
         return
     end
-
+  
     local function ativarLasers()
         podeAtirar = true
     end
-    
+
     timer.performWithDelay(500,ativarLasers,1)
 end
+
+
 
 function checarBalasNaveForaLimite()
     if #balasNave > 0 then
@@ -152,15 +164,6 @@ function checarBalasNaveForaLimite()
         end
     end
 end
-
-
-function gameLoop()
-    atualizarScore(sim)
-	checarBalasNaveForaLimite()
-    moverInvasores()
-    checarBalasInvasoresForaLimite()
-end
-
 
 ---
 ---- Criando Invasores -->
@@ -204,27 +207,49 @@ function moverInvasores()
     end 
 end
 
+function atualizarScore(sim)
+     
+    score =  score + 100 
+
+  end
+
+function desenharScore()
+    local options ={
+    x = 100,
+    y = 0,
+    text = "Score:"
+}
+  local  ts = display.newText(options)
+
+    ts.text = ts.text .. score
+
+    scene.view:insert(ts)
+ 
+end
+
+function atualizarVidas(numV)
+	nVidas = numV - 1
+end
+
+function desenharVidas()
+
+    local options ={
+    x = margemR- 80,
+    y = 0,
+    text = "Vidas:"
+}
+ local   ts = display.newText(options)
+
+    ts.text = ts.text .. nVidas
+
+    scene.view:insert(ts)
+ 
+end
+
+
 --
 --- Tratando colisões --->
 --
-local score = 0
-function atualizarScore(sim)
-     
-    if sim == true then
-    score =  score + 100 
-    end
-    desenharScore(score)
-  end
-
-function desenharScore(score)
-    local options ={
-    x = margemL + 100,
-    y = 0,
-    text = "Score:" .. score
-}
-    ts = display.newText(options)
-    scene.view:insert(ts)
-end
 function onCollision(event)
 	local function removerNaveEinvasoresBalas(event)
     
@@ -235,7 +260,7 @@ function onCollision(event)
             table.insert(invasorAtirador, invasores[indiceInvasor - invasoresPorLinha])
     	end
         params.oInvasor.isVisible = false
-        physics.removeBody(params.oInvasor)
+       	physics.removeBody(params.oInvasor)
         table.remove(invasorAtirador, table.indexOf(invasorAtirador, params.oInvasor))
          
         if table.indexOf(balasNave,params.asBalasNave)~=nil then
@@ -258,39 +283,41 @@ function onCollision(event)
                 tm.params = {oInvasor = event.object2 , asBalasNave = event.object1}
                 atualizarScore(true)
             end
-end
-            if(event.object1.name == "nave" and event.object2.name == "laseri") then
+
+            if event.object1.name == "nave" and event.object2.name == "laseri" then
             table.remove(balasInvasores,table.indexOf(balasInvasores,event.object2))
             event.object2:removeSelf()
             event.object2 = nil
-            if(naveImortal == false) then
+
+            if naveImortal == false  then
             destruirNave()
             end
-               if(event.object1.name == "laseri" and event.object2.name == "nave") then
+               if event.object1.name == "laseri" and event.object2.name == "nave"  then
             table.remove(balasInvasores,table.indexOf(balasInvasores,event.object1))
             event.object1:removeSelf()
             event.object1 = nil
-            if(naveImortal == false) then
+
+            if naveImortal == false  then
                 destruirNave()
             end
         
 
-           if(event.object1.name == "nave" and event.object2.name == "invasor") then
-            nVidas = 0
+           if event.object1.name == "nave" and event.object2.name == "invasor" or 
+           	event.object1.name == "invasor" and event.object2.name == "nave"  then
+            
+            nVidas = -1
             destruirNave()
-        end
-         
-         if(event.object1.name == "invasor" and event.object2.name == "nave") then
-            nVidas = 0
-            destruirNave()
+            end
             end
         end
     end
 end
 
 function destruirNave()
-    nVidas = nVidas- 1;
-      if(nVidas <= 0) then
+
+    atualizarVidas(nVidas)
+
+      if nVidas <= 0  then
         gameDados.invaderNum  = 1
         composer.gotoScene("inicio")
     else
